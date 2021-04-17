@@ -55,3 +55,9 @@ A simple bloom filter implemented with `bitarray`.
 ### `client`  
 
 The `client` mainly focus on broadcasting and listening. It also decides when a new `ephid` should be generated and when to upload `QBF` and `CBF` and etc.
+
+### `shamir-mnemonic`
+pip3 install shamir-mnemonic
+if is (3,6) mode: creates 6 shares and 3 shares are enough to encrypt the message
+so only 3 shares should be provided while decrypting
+or it will raise an error.
