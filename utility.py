@@ -4,10 +4,32 @@ from third_party.ecdsa import ECDH, SECP128r1, VerifyingKey
 # library for generating murmur hash
 from third_party.pymmh3 import hash as mmhash32
 
+# random number
+from random import randint
+
 # network related libraries
 import socket
 from time import sleep
 from threading import Thread
+
+# use sys.byteorder
+import sys
+
+
+# used when debugging
+def bytearr_hex_to_str(bytearr_key: bytearray):
+    return bytearr_key.hex()
+
+# used when debugging
+def str_hex_to_bytearr(str_key: str):
+    return bytearray.fromhex(str_key)
+
+# generate murmur hash in 3 bytes
+def murmurhash(pub_key: bytearray):
+    hash_val = mmhash32(pub_key, seed=randint(0, 100000000))
+    hash_val_bytearr = hash_val.to_bytes(4, sys.byteorder, signed=True)[:3]
+    return hash_val_bytearr
+
 
 '''
 A simple recource manager managing the
@@ -17,36 +39,22 @@ class EncMgr(object):
     def __init__(self):
         self.mgr = ECDH(curve=SECP128r1)
         self.mgr.generate_private_key()
-        self.priv_key = self.__cvt_to_str(self.mgr.private_key.to_string())
-        self.pub_key = self.__cvt_to_str(
-            self.mgr.get_public_key().to_string(
-                "compressed")[1:]
-            )
-        self.mmh32 = mmhash32(self.pub_key)
+        self.priv_key = self.mgr.private_key.to_string()
+        self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
+        self.mmh32 = murmurhash(self.pub_key)
     
     def get_shared(self, pub_key: str):
-        restored_key = '02' + pub_key
-        restored_key = self.__cvt_to_bytearr(restored_key)
+        restored_key = bytearray.fromhex('0x02') + pub_key
         restored_key = VerifyingKey.from_string(restored_key, curve=SECP128r1)
         self.mgr.load_received_public_key(restored_key)
-        return hex(self.mgr.generate_sharedsecret())
+        return self.mgr.generate_sharedsecret()
 
     def new_priv_key(self):
         self.mgr.generate_private_key()
-        self.priv_key = self.__cvt_to_str(self.mgr.private_key.to_string())
-        self.pub_key = self.__cvt_to_str(
-            self.mgr.get_public_key().to_string(
-                "compressed")[1:]
-            )
-        self.mmh32 = mmhash32(self.pub_key)
+        self.priv_key = self.mgr.private_key.to_string()
+        self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
+        self.mmh32 = murmurhash(self.pub_key)
 
-    @staticmethod
-    def __cvt_to_str(bytearr_key: bytearray):
-        return bytearr_key.hex()
-
-    @staticmethod
-    def __cvt_to_bytearr(str_key: str):
-        return bytearray.fromhex(str_key)
 
 
 '''
