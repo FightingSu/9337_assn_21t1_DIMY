@@ -17,9 +17,22 @@ To accomplish this project, we had done many experiments to learn different tool
 The `utility.py` mainly contains the classes, functions we designed to accomplish this task.
 
 
-# Introduction to different classes
+# Introduction to different classes and functions
 
-## `EncMgr`
+## Functions
+
+### `murmurhash`
+
+Generating a 3-bytes long hash. This operation discard the last byte of murmur hash 32
+
+### `bytearr_hex_to_str` and `str_hex_to_bytearr`
+
+These two functions performs the conversion between `bytearray` and `str`. Mainly used for debugging
+
+
+## classes
+
+### `EncMgr`
 
 The `EncMgr` manages `ephid` and generates `encid`. 
 
@@ -27,6 +40,6 @@ The `EncMgr` manages `ephid` and generates `encid`.
 + The class member function `get_shared()` returns the `encid` generated for bloom filter. 
 + The class member function `new_priv_key()` helps you to generate new `ephid`.
 
-## `client`
+### `client`
 
 The `client` mainly focus on broadcasting and listening. It also decides when a new `ephid` should be generated and when to upload `QBF` and `CBF` and etc.
