@@ -132,7 +132,7 @@ class client(object):
             recived_hashid = data[-3:]
             data = data[0:-4]
             # print('Server received from {}: {}'.format(address, data.decode('utf-8')))
-            # print(data)
+            print('the message I recieved:\n',data)
             self.ephid_complete_check(data.decode('utf-8'),recived_hashid)
         
     # broadcast
@@ -147,7 +147,7 @@ class client(object):
         # hashid = self.encmgr.mmh32
         while(True):
             share_hash = self.msg.pop().encode('utf-8') + ' '.encode('utf-8') + self.encmgr.mmh32 
-            print(share_hash)
+            print('the message I send:\n',share_hash)
             print(self.encmgr.mmh32)
             s.sendto(share_hash, (network, self.port))
             print("----------sending EphID----------")
@@ -157,11 +157,12 @@ class client(object):
     def ephid_cnt_check(self):
     #    print("function 'ephid_cnt_check' not finished!")
         self.ephid_cnt = self.ephid_cnt + 1
-        print('what a fucking shit!!!!!!!!!',self.ephid_cnt)
+        # print(self.ephid_cnt)
         if (self.ephid_cnt == 6 ):
-            self.encmgr.new_priv_key
+            self.encmgr.new_priv_key()
             self.ephid_cnt = 0
             self.msg = create_shares(self.encmgr.pub_key)
+            self.encmgr.mmh32 = self.encmgr.mmh32
             print('Generate new ID') 
 
 
