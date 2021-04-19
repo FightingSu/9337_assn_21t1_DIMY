@@ -4,6 +4,10 @@ from third_party.ecdsa import ECDH, SECP128r1, VerifyingKey
 # library for generating murmur hash
 from third_party.pymmh3 import hash as mmhash32
 
+
+# bitarray
+from bitarray import bitarray
+
 # random number
 from random import randint
 
