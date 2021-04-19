@@ -77,7 +77,7 @@ class bloom_filter(object):
 A simple recource manager managing the
 generation of ephid and encid.
 '''
-class EncMgr(object):
+class enc_mgr(object):
     def __init__(self):
         self.mgr = ECDH(curve=SECP128r1)
         self.mgr.generate_private_key()
@@ -86,10 +86,10 @@ class EncMgr(object):
         self.mmh32 = generate_identifier(self.pub_key)
     
     def get_shared(self, pub_key: str):
-        restored_key = bytearray.fromhex('0x02') + pub_key
+        restored_key = bytearray.fromhex('02') + pub_key
         restored_key = VerifyingKey.from_string(restored_key, curve=SECP128r1)
         self.mgr.load_received_public_key(restored_key)
-        return self.mgr.generate_sharedsecret()
+        return bytearray.fromhex(hex(self.mgr.generate_sharedsecret())[2:])
 
     def new_priv_key(self):
         self.mgr.generate_private_key()
@@ -114,12 +114,12 @@ class client(object):
         self.port = port
 
         # encounter id manager
-        self.encmgr = EncMgr()
+        self.encmgr = enc_mgr()
 
         # ephid broadcast count
         # if one ephid broadcasted many times
         # generate a new one instead
-        # (use EncMgr.new_priv_key())
+        # (use enc_mgr.new_priv_key())
         # and reset ephid_cnt
         self.ephid_cnt = 0
 
