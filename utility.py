@@ -4,6 +4,9 @@ from third_party.ecdsa import ECDH, SECP128r1, VerifyingKey
 # library for generating murmur hash
 from third_party.pymmh3 import hash as mmhash32
 
+# bitarray
+from bitarray import bitarray
+
 # random number
 from random import randint
 
@@ -31,10 +34,35 @@ def str_hex_to_bytearr(str_key: str):
     return bytearray.fromhex(str_key)
 
 # generate murmur hash in 3 bytes
-def murmurhash(pub_key: bytearray):
+def generate_identifier(pub_key: bytearray):
     hash_val = mmhash32(pub_key, seed=randint(0, 100000000))
     hash_val_bytearr = hash_val.to_bytes(4, sys.byteorder, signed=True)[:3]
     return hash_val_bytearr
+
+
+class bloom_filter(object):
+    # m is the size of the filter
+    # k is the number of hashes
+    # n is the number of entries to be stored
+    def __init__(self, m, k, n):
+        self.filter_size = m
+        self.num_hashes = k
+        self.num_entries = n
+        self.bitarr = bitarray(self.filter_size)
+        self.bitarr.setall(0)
+    
+    def put(self, item):
+        for i in range(0, self.num_hashes):
+            map_to = mmhash32(item, i + 2048) % self.filter_size
+            self.bitarr[map_to] = True
+    
+    def get(self, item):
+        for i in range(0, self.num_hashes):
+            map_to = mmhash32(item, i + 2048) % self.filter_size
+            if self.bitarr[map_to] == False:
+                return False
+            
+        return True
 
 
 '''
@@ -47,7 +75,7 @@ class EncMgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = murmurhash(self.pub_key)  # the hash value
+        self.mmh32 = generate_identifier(self.pub_key)
     
     def get_shared(self, pub_key: str):
         restored_key = bytearray.fromhex('0x02') + pub_key
@@ -59,8 +87,7 @@ class EncMgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = murmurhash(self.pub_key)
-
+        self.mmh32 = generate_identifier(self.pub_key)
 
 
 '''
