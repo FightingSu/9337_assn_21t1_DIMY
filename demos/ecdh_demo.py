@@ -39,9 +39,8 @@ print("\n\n"\
 
 
 from utility import *
-bob = EncMgr()
-alice = EncMgr()
+bob = enc_mgr()
+alice = enc_mgr()
 
 print(f"{alice.get_shared(bob.pub_key)}, {bob.get_shared(alice.pub_key)}")
-
 
