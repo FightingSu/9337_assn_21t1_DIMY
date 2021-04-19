@@ -4,9 +4,6 @@ from third_party.ecdsa import ECDH, SECP128r1, VerifyingKey
 # library for generating murmur hash
 from third_party.pymmh3 import hash as mmhash32
 
-# bitarray
-from bitarray import bitarray
-
 # random number
 from random import randint
 
@@ -34,35 +31,10 @@ def str_hex_to_bytearr(str_key: str):
     return bytearray.fromhex(str_key)
 
 # generate murmur hash in 3 bytes
-def generate_identifier(pub_key: bytearray):
+def murmurhash(pub_key: bytearray):
     hash_val = mmhash32(pub_key, seed=randint(0, 100000000))
     hash_val_bytearr = hash_val.to_bytes(4, sys.byteorder, signed=True)[:3]
     return hash_val_bytearr
-
-
-class bloom_filter(object):
-    # m is the size of the filter
-    # k is the number of hashes
-    # n is the number of entries to be stored
-    def __init__(self, m, k, n):
-        self.filter_size = m
-        self.num_hashes = k
-        self.num_entries = n
-        self.bitarr = bitarray(self.filter_size)
-        self.bitarr.setall(0)
-    
-    def put(self, item):
-        for i in range(0, self.num_hashes):
-            map_to = mmhash32(item, i + 2048) % self.filter_size
-            self.bitarr[map_to] = True
-    
-    def get(self, item):
-        for i in range(0, self.num_hashes):
-            map_to = mmhash32(item, i + 2048) % self.filter_size
-            if self.bitarr[map_to] == False:
-                return False
-            
-        return True
 
 
 '''
@@ -75,7 +47,7 @@ class EncMgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = generate_identifier(self.pub_key)
+        self.mmh32 = murmurhash(self.pub_key)  # the hash value
     
     def get_shared(self, pub_key: str):
         restored_key = bytearray.fromhex('0x02') + pub_key
@@ -87,7 +59,8 @@ class EncMgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = generate_identifier(self.pub_key)
+        self.mmh32 = murmurhash(self.pub_key)
+
 
 
 '''
@@ -149,7 +122,7 @@ class client(object):
     # the hashid can't be decoded by utf-8, so when a message is recieved
     # kick out the hashid from the end of the message. Hashid's length is 3 byte
     def listen(self):
-        print("function 'listen' not finished!")
+        #print("function 'listen' not finished!")
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         s.bind(('', self.port))
@@ -167,7 +140,7 @@ class client(object):
     # we use self.ephid_cnt_check() function to check whether a new 
     # ephid should be generated
     def send(self):
-        print("function 'send' not finished!")
+        # print("function 'send' not finished!")
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         network = '<broadcast>'
@@ -216,8 +189,4 @@ class client(object):
         for i in completed:
             del self.ephid_frag[i]
                 
-            
-
-
-
-
+# interesting bug, how can this happen?
