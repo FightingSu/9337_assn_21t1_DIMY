@@ -37,6 +37,39 @@ def murmurhash(pub_key: bytearray):
     return hash_val_bytearr
 
 
+class bloom_filter(object):
+    # m is the size of the filter
+    # k is the number of hashes
+    # n is the number of entries to be stored
+    def __init__(self, m, k, n):
+        self.filter_size = m
+        self.num_hashes = k
+        self.num_entries = n
+        self.bitarr = bitarray(self.filter_size)
+        self.bitarr.setall(0)
+    
+    def put(self, item):
+        for i in range(0, self.num_hashes):
+            map_to = mmhash32(item, i + 2048) % self.filter_size
+            self.bitarr[map_to] = True
+    
+    def get(self, item):
+        for i in range(0, self.num_hashes):
+            map_to = mmhash32(item, i + 2048) % self.filter_size
+            if self.bitarr[map_to] == False:
+                return False
+            
+        return True
+
+    @staticmethod
+    def combine_filters(filters: list):
+        arr = bitarray(filters[0].filter_size)
+        arr.setall(0)
+        for f in filters:
+            arr |= f.bitarr
+        return arr
+        
+
 '''
 A simple recource manager managing the
 generation of ephid and encid.
@@ -49,8 +82,10 @@ class EncMgr(object):
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
         self.mmh32 = murmurhash(self.pub_key)  # the hash value
     
+    #EchID
     def get_shared(self, pub_key: str):
-        restored_key = bytearray.fromhex('0x02') + pub_key
+        # restored_key = bytearray.fromhex('0x02') + pub_key
+        restored_key = bytearray.fromhex('02') + pub_key
         restored_key = VerifyingKey.from_string(restored_key, curve=SECP128r1)
         self.mgr.load_received_public_key(restored_key)
         return self.mgr.generate_sharedsecret()
@@ -62,6 +97,13 @@ class EncMgr(object):
         self.mmh32 = murmurhash(self.pub_key)
 
 
+
+class statusUpdate (object):
+    def __init__(self):
+        pass
+
+    def update(self, QBF):
+        pass
 
 '''
 Object that sends out ephid and receive from others.
@@ -108,6 +150,10 @@ class client(object):
 
         # complete ephids
         self.ephid_complete = defaultdict(list)
+
+        # create a bloom filter
+        self.DBFs = bloom_filter(800000,2,1000)
+        self.DBFs_list = []
 
 
     # start broadcasting and monitoring
@@ -157,13 +203,23 @@ class client(object):
     def ephid_cnt_check(self):
     #    print("function 'ephid_cnt_check' not finished!")
         self.ephid_cnt = self.ephid_cnt + 1
-        # print(self.ephid_cnt)
-        if (self.ephid_cnt == 6 ):
+        
+        #for every 10 minutes, a new bloom filter will be created
+        if (self.ephid_cnt % 600 ==0):
+            print("It's 10 minutes, generate a new daily bloom filter!")
+            self.DBFs_list.append(self.DBFs)
+            self.DBFs = bloom_filter(800000,2,1000)
+
+        if (self.ephid_cnt % 6 == 0 ):
             self.encmgr.new_priv_key()
-            self.ephid_cnt = 0
+            # self.ephid_cnt = 0
             self.msg = create_shares(self.encmgr.pub_key)
             self.encmgr.mmh32 = self.encmgr.mmh32
             print('Generate new ID') 
+
+        # if one hour later, the first element in DBFs_list will be deleted
+        if (len(self.DBFs_list) == 6):
+            self.DBFs_list.pop(0)
 
 
 
@@ -179,8 +235,10 @@ class client(object):
         for i in  self.ephid_frag:
             if len(set(self.ephid_frag[i])) >= 3:
                 print('get enough shares, start to decode the ephid')
+                print("generate the EncID using EphID")
                 true_id = combine_shares(self.ephid_frag[i][0:3])
-                
+                encid = self.encmgr.get_shared(true_id)
+                self.DBFs.put(encid)
                 # if (true_id == self.encmgr.pub_key):
                 #     print('oh yeah!!!')
                 self.ephid_complete[len(self.ephid_complete) + 1].append(true_id)
@@ -189,4 +247,3 @@ class client(object):
         for i in completed:
             del self.ephid_frag[i]
                 
-# interesting bug, how can this happen?

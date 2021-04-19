@@ -11,3 +11,16 @@ has_get = bf.get("amazing")
 has_great = bf.get("great")
 has_fun = bf.get("fun")
 print(f"Check get: {has_get}\ncheck great: {has_great}\ncheck fun: {has_fun}")
+
+
+b1 = bloom_filter(4, 1, 2)
+b2 = bloom_filter(4, 1, 2)
+print(b1.bitarr)
+print(b2.bitarr)
+
+b1.put("233")
+b2.put("122")
+print(b1.bitarr)
+print(b2.bitarr)
+
+print(bloom_filter.combine_filters([b1, b2]))
