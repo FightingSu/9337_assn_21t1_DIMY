@@ -199,12 +199,12 @@ class client(object):
             s.sendto(share_hash, (network, self.port))
             print("----------sending EphID----------")
             self.ephid_cnt_check()
-            sleep(5)
+            sleep(1)
 
     def ephid_cnt_check(self):
     #    print("function 'ephid_cnt_check' not finished!")
         self.ephid_cnt = self.ephid_cnt + 1
-        
+        print("{} messages have been sent".format(self.ephid_cnt))
         #for every 10 minutes, a new bloom filter will be created
         if (self.ephid_cnt % 600 ==0):
             print("It's 10 minutes, generate a new daily bloom filter!")
