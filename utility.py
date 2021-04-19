@@ -64,6 +64,14 @@ class bloom_filter(object):
             
         return True
 
+    @staticmethod
+    def combine_filters(filters: list):
+        arr = bitarray(filters[0].filter_size)
+        arr.setall(0)
+        for f in filters:
+            arr |= f.bitarr
+        return arr
+        
 
 '''
 A simple recource manager managing the
@@ -91,6 +99,13 @@ class EncMgr(object):
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
         self.mmh32 = generate_identifier(self.pub_key)
 
+
+class statusUpdate (object):
+    def __init__(self):
+        pass
+
+    def update(self, QBF):
+        pass
 
 '''
 Object that sends out ephid and receive from others.
