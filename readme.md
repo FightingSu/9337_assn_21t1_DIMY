@@ -40,9 +40,9 @@ These two functions performs the conversion between `bytearray` and `str`. Mainl
 
 ## classes
 
-### `EncMgr`
+### `enc_mgr`
 
-The `EncMgr` manages `ephid` and generates `encid`. 
+The `enc_mgr` manages `ephid` and generates `encid`. 
 
 + The class member `pub_key` is actually the current `ephid`. 
 + The class member function `get_shared()` returns the `encid` generated for bloom filter.
