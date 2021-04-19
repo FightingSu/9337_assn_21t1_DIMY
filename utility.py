@@ -122,7 +122,7 @@ class client(object):
     # the hashid can't be decoded by utf-8, so when a message is recieved
     # kick out the hashid from the end of the message. Hashid's length is 3 byte
     def listen(self):
-        print("function 'listen' not finished!")
+        #print("function 'listen' not finished!")
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         s.bind(('', self.port))
@@ -140,7 +140,7 @@ class client(object):
     # we use self.ephid_cnt_check() function to check whether a new 
     # ephid should be generated
     def send(self):
-        print("function 'send' not finished!")
+        # print("function 'send' not finished!")
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         network = '<broadcast>'
