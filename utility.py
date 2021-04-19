@@ -77,8 +77,10 @@ class EncMgr(object):
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
         self.mmh32 = generate_identifier(self.pub_key)
     
+    #EchID
     def get_shared(self, pub_key: str):
-        restored_key = bytearray.fromhex('0x02') + pub_key
+        # restored_key = bytearray.fromhex('0x02') + pub_key
+        restored_key = bytearray.fromhex('02') + pub_key
         restored_key = VerifyingKey.from_string(restored_key, curve=SECP128r1)
         self.mgr.load_received_public_key(restored_key)
         return self.mgr.generate_sharedsecret()
@@ -136,6 +138,10 @@ class client(object):
         # complete ephids
         self.ephid_complete = defaultdict(list)
 
+        # create a bloom filter
+        self.DBFs = bloom_filter(800000,2,1000)
+        self.DBFs_list = []
+
 
     # start broadcasting and monitoring
     def start_service(self):
@@ -184,13 +190,23 @@ class client(object):
     def ephid_cnt_check(self):
     #    print("function 'ephid_cnt_check' not finished!")
         self.ephid_cnt = self.ephid_cnt + 1
-        # print(self.ephid_cnt)
-        if (self.ephid_cnt == 6 ):
+        
+        #for every 10 minutes, a new bloom filter will be created
+        if (self.ephid_cnt % 600 ==0):
+            print("It's 10 minutes, generate a new daily bloom filter!")
+            self.DBFs_list.append(self.DBFs)
+            self.DBFs = bloom_filter(800000,2,1000)
+
+        if (self.ephid_cnt % 6 == 0 ):
             self.encmgr.new_priv_key()
-            self.ephid_cnt = 0
+            # self.ephid_cnt = 0
             self.msg = create_shares(self.encmgr.pub_key)
             self.encmgr.mmh32 = self.encmgr.mmh32
             print('Generate new ID') 
+
+        # if one hour later, the first element in DBFs_list will be deleted
+        if (len(self.DBFs_list) == 6):
+            self.DBFs_list.pop(0)
 
 
 
@@ -206,8 +222,10 @@ class client(object):
         for i in  self.ephid_frag:
             if len(set(self.ephid_frag[i])) >= 3:
                 print('get enough shares, start to decode the ephid')
+                print("generate the EncID using EphID")
                 true_id = combine_shares(self.ephid_frag[i][0:3])
-                
+                encid = self.encmgr.get_shared(true_id)
+                self.DBFs.put(encid)
                 # if (true_id == self.encmgr.pub_key):
                 #     print('oh yeah!!!')
                 self.ephid_complete[len(self.ephid_complete) + 1].append(true_id)
