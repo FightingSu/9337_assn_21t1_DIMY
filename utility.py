@@ -189,7 +189,7 @@ class client(object):
         for i in completed:
             del self.ephid_frag[i]
                 
-            
+# interesting bug, how can this happen?
 
 
 
