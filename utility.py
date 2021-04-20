@@ -162,6 +162,11 @@ class client(object):
 
         # listening thread
         self.monitor_thread = Thread(target=self.listen)
+
+        # backend communicate thread
+        # QBF will be sent to the backend server, and get the result
+        self.backend_thread = Thread(target=self.backend_communication)
+
         # key is hash of ephid received, NOT IP ADDRESS
         # value is the fragment of ephid
         #
@@ -182,6 +187,7 @@ class client(object):
         self.ephid_complete = defaultdict(list)
 
         # create a bloom filter
+        print("======= create a new Contact BloomFilter (every 10 minutes will create a new one, maximum 6 CBFs) ======= \n")
         self.DBFs = bloom_filter(800000,2,1000)
         self.DBFs_list = []
 
@@ -190,6 +196,8 @@ class client(object):
     def start_service(self):
         self.broadcast_thread.start()
         self.monitor_thread.start()
+        self.backend_thread.start()
+        print(">>>>> Service start working, client is working on UDP port {} <<<<<\n".format(self.port))
 
     # listen to others' broadcast
     # the listen function should perform shamir's secret sharing
@@ -208,7 +216,7 @@ class client(object):
             recived_hashid = data[-3:]
             data = data[0:-4]
             # print('Server received from {}: {}'.format(address, data.decode('utf-8')))
-            print('the message I recieved:\n',data)
+            print('Segment 3-B, received share: {}'.format(data))
             self.ephid_complete_check(data.decode('utf-8'),recived_hashid)
         
     # broadcast
@@ -222,23 +230,47 @@ class client(object):
         network = '<broadcast>'
         # hashid = self.encmgr.mmh32
         while(True):
-            share_hash = self.msg.pop().encode('utf-8') + ' '.encode('utf-8') + self.encmgr.mmh32 
-            print('the message I send:\n',share_hash)
+            # print the values
+            print("------------------> Segment 1 <------------------")
+            print(" generate EphID:{}".format(self.encmgr.pub_key))
+            print(" hash value of EphID: {}\n".format(self.encmgr.mmh32))
+            if(len(self.msg) == 6):
+                print("------------------> Segment 2 <------------------")
+                print("Six Shares:")
+                for i in self.msg:
+                    print(i.encode('utf8'))
+
+
+            share_hash = self.msg.pop().encode('utf-8') + ' '.encode('utf-8') + self.encmgr.mmh32
+
+            print('Segment 3-A, sending share: {}\n'.format(share_hash))
             print(self.encmgr.mmh32)
             s.sendto(share_hash, (network, self.port))
-            print("----------sending EphID----------")
             self.ephid_cnt_check()
             sleep(1)
+    
+    def backend_communication(self):
+        while(True):
+            if( self.ephid_cnt == 24):
+                six_filters = bloom_filter.combine_filters(self.DBFs_list)
+                print("uploading QBF to backend server...")
+                result = query_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
+                pprint(result)
+                result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+                pprint(result)
+        
+
+
+
 
     def ephid_cnt_check(self):
     #    print("function 'ephid_cnt_check' not finished!")
         self.ephid_cnt = self.ephid_cnt + 1
         print("{} messages have been sent".format(self.ephid_cnt))
         #for every 10 minutes, a new bloom filter will be created
-        
         # 600
-        if (self.ephid_cnt % 10 ==0):
-            print("It's 10 minutes, generate a new daily bloom filter!")
+        if (self.ephid_cnt % 12 ==0):
+            # print("It's 10 minutes, generate a new daily bloom filter!")
             self.DBFs_list.append(self.DBFs)
             self.DBFs = bloom_filter(800000,2,1000)
 
@@ -247,7 +279,7 @@ class client(object):
             # self.ephid_cnt = 0
             self.msg = create_shares(self.encmgr.pub_key)
             self.encmgr.mmh32 = self.encmgr.mmh32
-            print('Generate new ID') 
+            # print('Generate new ID') 
 
         # if one hour passes, the first element in DBFs_list will be deleted
         if (len(self.DBFs_list) == 6):
@@ -255,14 +287,8 @@ class client(object):
         
         # every hour upload the 6 bloom filters
         # 3600 
-        if (self.ephid_cnt == 20):
-            six_filters = bloom_filter.combine_filters(self.DBFs_list)
-            print("Will up load the QBF")
-            result = query_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
-            pprint(result)
-            result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
-            pprint(result)
-
+        if (self.ephid_cnt == 24):
+            self.ephid_cnt = 0
 
 
 
@@ -275,18 +301,30 @@ class client(object):
         # delete this id from the this dictionary
         self.ephid_frag[hashid].append(fragments)
         completed = []
+
+        # print how many shares are recieved
+        tmp = 0
+        for i in  self.ephid_frag:
+            tmp = tmp + len(self.ephid_frag[i])
+            print("Segment 3-C, total shares received: {}".format(tmp))
+
         for i in  self.ephid_frag:
             if len(set(self.ephid_frag[i])) >= 3:
-                print('get enough shares, start to decode the ephid')
-                print("generate the EncID using EphID")
-                
+                print("------------------> Segment 4 <------------------\n")
                 # decode the EphID 
                 true_id = combine_shares(self.ephid_frag[i][0:3])
+                print("Segment 4-A, re-construct EphID: {}".format(true_id))
+                r_hashid = murmurhash(true_id)
+                print("Segment 4-B, hash value of re-constructed EphID: {} is equal to hash value of original EphID: {}".format(r_hashid,hashid))
+
 
                 #generate the EncID
                 encid = self.encmgr.get_shared(true_id)
+                print("------------------> Segment 5 <------------------\n")
+                print("generate shared secret EncID: {}".format(encid))
 
                 # put the EncID into the bloom filter then delete the EncID
+                print("======== insert into DBF (murmur3 hashing with 3 hashes) ========\n")
                 self.DBFs.put(encid)
                 del encid
 
