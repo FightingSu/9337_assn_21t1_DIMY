@@ -30,6 +30,11 @@ from collections import defaultdict
 # use sys.byteorder
 import sys
 
+# import for the backend server
+import os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+from pprint import pprint
+
 def query_contact (QBF, url):
     data = json.dumps({"QBF": "{}".format(b64encode(QBF.bitarr.tobytes()))})
     headers={"Content-Type":"application/json"}
@@ -231,7 +236,9 @@ class client(object):
         self.ephid_cnt = self.ephid_cnt + 1
         print("{} messages have been sent".format(self.ephid_cnt))
         #for every 10 minutes, a new bloom filter will be created
-        if (self.ephid_cnt % 600 ==0):
+        
+        # 600
+        if (self.ephid_cnt % 10 ==0):
             print("It's 10 minutes, generate a new daily bloom filter!")
             self.DBFs_list.append(self.DBFs)
             self.DBFs = bloom_filter(800000,2,1000)
@@ -243,9 +250,20 @@ class client(object):
             self.encmgr.mmh32 = self.encmgr.mmh32
             print('Generate new ID') 
 
-        # if one hour later, the first element in DBFs_list will be deleted
+        # if one hour passes, the first element in DBFs_list will be deleted
         if (len(self.DBFs_list) == 6):
             self.DBFs_list.pop(0)
+        
+        # every hour upload the 6 bloom filters
+        # 3600 
+        if (self.ephid_cnt == 20):
+            six_filters = bloom_filter.combine_filters(self.DBFs_list)
+            print("Will up load the QBF")
+            result = query_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
+            pprint(result)
+            result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+            pprint(result)
+
 
 
 
@@ -262,14 +280,27 @@ class client(object):
             if len(set(self.ephid_frag[i])) >= 3:
                 print('get enough shares, start to decode the ephid')
                 print("generate the EncID using EphID")
+                
+                # decode the EphID 
                 true_id = combine_shares(self.ephid_frag[i][0:3])
+
+                #generate the EncID
                 encid = self.encmgr.get_shared(true_id)
+
+                # put the EncID into the bloom filter then delete the EncID
                 self.DBFs.put(encid)
-                # if (true_id == self.encmgr.pub_key):
-                #     print('oh yeah!!!')
+                del encid
+
+                # result = query_contact(self.DBFs, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
+                # pprint(result)
+                # result = upload_contact(self.DBFs, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+                # pprint(result)
+                
                 self.ephid_complete[len(self.ephid_complete) + 1].append(true_id)
                 completed.append(i)
+        
         # delete the hashid from this dictionary
+        # array completed contain all the decoded EphID
         for i in completed:
             del self.ephid_frag[i]
                 
