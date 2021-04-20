@@ -4,8 +4,7 @@ from third_party.ecdsa import ECDH, SECP128r1, VerifyingKey
 # library for generating murmur hash
 from third_party.pymmh3 import hash as mmhash32
 
-
-# bitarray
+# bitarray, used in bloom_filter
 from bitarray import bitarray
 
 # random number
@@ -13,18 +12,45 @@ from random import randint
 
 # network related libraries
 import socket
+import requests
+from requests.exceptions import Timeout
+import json
+from base64 import b64encode
+
+# multi-thread related
 from time import sleep
 from threading import Thread
 
 # sss
 from third_party.sss import create_shares, combine_shares
 
-### default list
+# default list
 from collections import defaultdict
 
 # use sys.byteorder
 import sys
 
+def query_contact (QBF, url):
+    data = json.dumps({"QBF": "{}".format(b64encode(QBF.bitarr.tobytes()))})
+    headers={"Content-Type":"application/json"}
+    try:
+        response = requests.post(url, data=data, headers=headers)
+    except Timeout:
+        print("----- Timeout error, retrying... -----")
+        return ''
+    else:
+        return response.text
+
+def upload_contact (CBF, url):
+    data = json.dumps({"CBF": "{}".format(b64encode(CBF.bitarr.tobytes()))})
+    headers={"Content-Type":"application/json"}
+    try:
+        response = requests.post(url, data=data, headers=headers)
+    except Timeout:
+        print("----- Timeout error, retrying... -----")
+        return ''
+    else:
+        return response.text
 
 # used when debugging
 def bytearr_hex_to_str(bytearr_key: bytearray):
@@ -91,7 +117,10 @@ class enc_mgr(object):
         restored_key = bytearray.fromhex('02') + pub_key
         restored_key = VerifyingKey.from_string(restored_key, curve=SECP128r1)
         self.mgr.load_received_public_key(restored_key)
-        return bytearray.fromhex(hex(self.mgr.generate_sharedsecret())[2:])
+        hex_encid = hex(self.mgr.generate_sharedsecret())[2:]
+        prefix = "0" * (32 - len(hex_encid))
+        hex_encid = prefix + hex_encid
+        return bytearray.fromhex(hex_encid)
 
     def new_priv_key(self):
         self.mgr.generate_private_key()
@@ -101,12 +130,6 @@ class enc_mgr(object):
 
 
 
-class statusUpdate (object):
-    def __init__(self):
-        pass
-
-    def update(self, QBF):
-        pass
 
 '''
 Object that sends out ephid and receive from others.

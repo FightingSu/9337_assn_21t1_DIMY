@@ -1,0 +1,15 @@
+import sys, os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
+from utility import bloom_filter, query_contact, upload_contact
+from pprint import pprint
+
+bf = bloom_filter(800000, 2, 1000)
+bf.put("amazing")
+bf.put("great")
+
+result = query_contact(bf, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
+pprint(result)
+
+result = upload_contact(bf, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+pprint(result)
