@@ -23,4 +23,4 @@ b2.put("122")
 print(b1.bitarr)
 print(b2.bitarr)
 
-print(bloom_filter.combine_filters([b1, b2]))
+print(bloom_filter.combine_filters([b1, b2]).bitarr)
