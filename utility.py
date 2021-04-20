@@ -250,8 +250,8 @@ class client(object):
         while(True):
             # print the values
             print("------------------> Segment 1 <------------------")
-            print(" generate EphID:{}".format(self.encmgr.pub_key))
-            print(" hash value of EphID: {}\n".format(self.encmgr.mmh32))
+            print("[ generate EphID:{}]".format(self.encmgr.pub_key))
+            print("[ hash value of EphID: {}]\n".format(self.encmgr.mmh32))
             if(len(self.msg) == 6):
                 print("------------------> Segment 2 <------------------")
                 print("Six Shares:")
@@ -261,8 +261,8 @@ class client(object):
 
             share_hash = self.msg.pop().encode('utf-8') + ' '.encode('utf-8') + self.encmgr.mmh32
             print("------------------> Segment 3 <------------------\n")
-            print('Segment 3-A, sending share: {}\n'.format(share_hash))
-            print(self.encmgr.mmh32)
+            print('[Segment 3-A, sending share: {}]\n'.format(share_hash))
+            # print(self.encmgr.mmh32)
             s.sendto(share_hash, (network, self.port))
             self.ephid_cnt_check()
             sleep(5)
