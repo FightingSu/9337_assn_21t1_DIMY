@@ -13,13 +13,14 @@ has_fun = bf.get("fun")
 print(f"Check get: {has_get}\ncheck great: {has_great}\ncheck fun: {has_fun}")
 
 
-b1 = bloom_filter(4, 1, 2)
-b2 = bloom_filter(4, 1, 2)
+b1 = bloom_filter(4, 2, 2)
+b2 = bloom_filter(4, 2, 2)
 print(b1.bitarr)
 print(b2.bitarr)
 
-b1.put("233")
-b2.put("122")
+insert_pos_b1 = b1.put("233")
+insert_pos_b2 = b2.put("122")
+print(insert_pos_b1, insert_pos_b2)
 print(b1.bitarr)
 print(b2.bitarr)
 
