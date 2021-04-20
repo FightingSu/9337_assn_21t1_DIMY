@@ -84,9 +84,12 @@ class bloom_filter(object):
         self.bitarr.setall(0)
     
     def put(self, item):
+        pos = []
         for i in range(0, self.num_hashes):
             map_to = mmhash32(item, i + 2048) % self.filter_size
             self.bitarr[map_to] = True
+            pos.append(map_to)
+        return pos
     
     def get(self, item):
         for i in range(0, self.num_hashes):
