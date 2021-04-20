@@ -93,11 +93,10 @@ class bloom_filter(object):
 
     @staticmethod
     def combine_filters(filters: list):
-        arr = bitarray(filters[0].filter_size)
-        arr.setall(0)
+        bf = bloom_filter(filters[0].filter_size, filters[0].num_hashes, filters[0].num_entries)
         for f in filters:
-            arr |= f.bitarr
-        return arr
+            bf.bitarr |= f.bitarr
+        return bf
         
 
 '''
