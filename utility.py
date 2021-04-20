@@ -35,6 +35,9 @@ import os
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from pprint import pprint
 
+# import datetime to calculate time
+import datetime
+
 def query_contact (QBF, url):
     data = json.dumps({"QBF": "{}".format(b64encode(QBF.bitarr.tobytes()))})
     headers={"Content-Type":"application/json"}
@@ -70,6 +73,14 @@ def generate_identifier(pub_key: bytearray):
     hash_val = mmhash32(pub_key, seed=randint(0, 100000000))
     hash_val_bytearr = hash_val.to_bytes(4, sys.byteorder, signed=True)[:3]
     return hash_val_bytearr
+
+
+def count_time():
+    today = datetime.datetime.now()
+    add = datetime.timedelta(hours=0.5)
+    new_time = (today + add).strftime('%Y-%m-%d %H:%M:%S')
+    return today,new_time
+
 
 
 class bloom_filter(object):
@@ -189,9 +200,11 @@ class client(object):
         # complete ephids
         self.ephid_complete = defaultdict(list)
 
+        # stored positions for QBFs
+
         # create a bloom filter
         print("======= create a new Contact BloomFilter (every 10 minutes will create a new one, maximum 6 CBFs) ======= \n")
-        self.DBFs = bloom_filter(800000,2,1000)
+        self.DBFs = bloom_filter(800000,3,1000)
         self.DBFs_list = []
 
 
@@ -218,6 +231,8 @@ class client(object):
             data, address = s.recvfrom(1024)
             recived_hashid = data[-3:]
             data = data[0:-4]
+            # if recived_hashid == self.encmgr.mmh32:
+            #     continue
             # print('Server received from {}: {}'.format(address, data.decode('utf-8')))
             print('Segment 3-B, received share: {}'.format(data))
             self.ephid_complete_check(data.decode('utf-8'),recived_hashid)
@@ -245,7 +260,7 @@ class client(object):
 
 
             share_hash = self.msg.pop().encode('utf-8') + ' '.encode('utf-8') + self.encmgr.mmh32
-
+            print("------------------> Segment 3 <------------------\n")
             print('Segment 3-A, sending share: {}\n'.format(share_hash))
             print(self.encmgr.mmh32)
             s.sendto(share_hash, (network, self.port))
@@ -255,12 +270,33 @@ class client(object):
     def backend_communication(self):
         while(True):
             if( self.ephid_cnt == 24):
+                now,nowplus = count_time()
                 six_filters = bloom_filter.combine_filters(self.DBFs_list)
+                print("------------------> Segment 8 <------------------\n")
+                print("[combine DBFs into a single QBF - {}]".format(now))
+                print("[ Currently have {} DBF, it's state:".format(len(self.DBFs_list)))
+                for i in self.DBFs_list:
+                    print(self.find_position(i))
+                print("[ Single QBF: {} ]".format(self.find_position(six_filters)))
+                print("[ NEXT QUERY TIME - {} ]".format(nowplus))
+
+
+                
                 print("uploading QBF to backend server...")
                 result = query_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
                 pprint(result)
                 result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
                 pprint(result)
+    # find what position in the filter is 1
+    def find_position(self,BF):
+        pos = []
+        tmp = str(BF.bitarr)[10:-2]
+        for i in range(0,len(tmp)):
+            if tmp[i] == "1":
+                pos.append(i)
+        return pos
+
+
         
 
 
@@ -275,7 +311,7 @@ class client(object):
         if (self.ephid_cnt % 12 ==0):
             # print("It's 10 minutes, generate a new daily bloom filter!")
             self.DBFs_list.append(self.DBFs)
-            self.DBFs = bloom_filter(800000,2,1000)
+            self.DBFs = bloom_filter(800000,3,1000)
 
         if (self.ephid_cnt % 6 == 0 ):
             self.encmgr.new_priv_key()
@@ -328,13 +364,11 @@ class client(object):
 
                 # put the EncID into the bloom filter then delete the EncID
                 print("======== insert into DBF (murmur3 hashing with 3 hashes) ========\n")
-                self.DBFs.put(encid)
+                positions = self.DBFs.put(encid)
+                print("Segment 7-A, insert EncID into DBF at positions:",positions)
+                positions = self.find_position(self.DBFs)
+                print("current DBF state after inserting new EncID: ",positions)
                 del encid
-
-                # result = query_contact(self.DBFs, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
-                # pprint(result)
-                # result = upload_contact(self.DBFs, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
-                # pprint(result)
                 
                 self.ephid_complete[len(self.ephid_complete) + 1].append(true_id)
                 completed.append(i)

@@ -25,3 +25,4 @@ print(b1.bitarr)
 print(b2.bitarr)
 
 print(bloom_filter.combine_filters([b1, b2]).bitarr)
+print(str(b2.bitarr)[10:-2])
