@@ -265,7 +265,7 @@ class client(object):
             print(self.encmgr.mmh32)
             s.sendto(share_hash, (network, self.port))
             self.ephid_cnt_check()
-            sleep(1)
+            sleep(5)
     
     def backend_communication(self):
         while(True):
