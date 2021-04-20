@@ -66,7 +66,7 @@ def str_hex_to_bytearr(str_key: str):
     return bytearray.fromhex(str_key)
 
 # generate murmur hash in 3 bytes
-def murmurhash(pub_key: bytearray):
+def generate_identifier(pub_key: bytearray):
     hash_val = mmhash32(pub_key, seed=randint(0, 100000000))
     hash_val_bytearr = hash_val.to_bytes(4, sys.byteorder, signed=True)[:3]
     return hash_val_bytearr
@@ -117,7 +117,7 @@ class enc_mgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = murmurhash(self.pub_key)  # the hash value
+        self.mmh32 = generate_identifier(self.pub_key)  # the hash value
     
     #EchID
     def get_shared(self, pub_key: str):
@@ -133,7 +133,7 @@ class enc_mgr(object):
         self.mgr.generate_private_key()
         self.priv_key = self.mgr.private_key.to_string()
         self.pub_key = self.mgr.get_public_key().to_string("compressed")[1:]
-        self.mmh32 = murmurhash(self.pub_key)
+        self.mmh32 = generate_identifier(self.pub_key)
 
 
 
@@ -317,7 +317,7 @@ class client(object):
                 # decode the EphID 
                 true_id = combine_shares(self.ephid_frag[i][0:3])
                 print("Segment 4-A, re-construct EphID: {}".format(true_id))
-                r_hashid = murmurhash(true_id)
+                r_hashid = generate_identifier(true_id)
                 print("Segment 4-B, hash value of re-constructed EphID: {} is equal to hash value of original EphID: {}".format(r_hashid,hashid))
 
 
