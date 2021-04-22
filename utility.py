@@ -185,6 +185,10 @@ class client(object):
         # QBF will be sent to the backend server, and get the result
         self.backend_thread = Thread(target=self.backend_communication)
 
+        self.CBF_upload = Thread(target=self.upload_CBF)
+        
+        # if uploadCBF is entered, up load all the DBFs
+
         # key is hash of ephid received, NOT IP ADDRESS
         # value is the fragment of ephid
         #
@@ -217,13 +221,15 @@ class client(object):
         self.DBFs_list = []
         
 
-
+    
     # start broadcasting and monitoring
     def start_service(self):
+        print(">>>>> Service start working, client is working on UDP port {} <<<<<\n".format(self.port))
         self.broadcast_thread.start()
         self.monitor_thread.start()
         self.backend_thread.start()
-        print(">>>>> Service start working, client is working on UDP port {} <<<<<\n".format(self.port))
+        self.CBF_upload.start()
+        
 
     # listen to others' broadcast
     # the listen function should perform shamir's secret sharing
@@ -310,8 +316,10 @@ class client(object):
                     print("uploading QBF to backend server...")
                     result = query_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
                     if result.find("No Match"):
+                        print("------------------> Segment 8 <------------------\n")
                         print("result: None Match!")
                     else:
+                        print("------------------> Segment 8 <------------------\n")
                         print("you may get infected because you contact with dangerous person!")
                     result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
 
@@ -350,9 +358,7 @@ class client(object):
             self.DBFs = bloom_filter(800000,3,1000)
             print("======= create a new Contact BloomFilter (every 10 minutes will create a new one, maximum 6 CBFs) ======= \n")
             # every 10 minutes, clear the contact list
-            for i in self.ephid_frag:
-                if len(i) <=2:
-                    del i
+            dict.clear(self.ephid_frag)
 
         # after every 6 sendings (1 minute) change a new EphID
         if (self.ephid_cnt % 6 == 0 ):
@@ -424,5 +430,32 @@ class client(object):
         # array completed contain all the decoded EphID
         for i in completed:
             del self.ephid_frag[i]
+    
+    def upload_CBF(self):
+        while(True):
+            command = input()
+            if command == None:
+                continue
+            if command == "uploadCBF":
+                if len(self.DBFs_list) > 0:
+                    six_filters = bloom_filter.combine_filters(self.DBFs_list)
+                    print("------------------> Segment 10 <------------------\n")
+                    print(" uploading CBF to backend server...")
+                    result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+                    if result.find("upload CBF success"):
+                        print("------------------> Segment 10 <------------------\n")
+                        print("upload CBF success")
+                    else:
+                        print("------------------> Segment 10 <------------------\n")
+                        print("upload failed")
+                else:
+                    print("don't have enough DBF,need at least one DBF")
+            else:
+                print("Please enter: 'uploadCBF' if you are diagnosed positive with COVID-19!")
+
+                
+
+
+
     
                 
