@@ -80,8 +80,8 @@ The `client` mainly focus on broadcasting and listening. It also decides when a 
 ephid_frag is a dictionary, which stored all the received hash id and shared messages.
 like this:
 {
-Hash_id_1:shared_msg_1, shared_message_2;
-Hash_id_2:shared_msg-1
+    Hash_id_1:shared_msg_1, shared_message_2;
+    Hash_id_2:shared_msg-1
  }
  Note that every hash id won't have more then two shared messages
  As onece three messages are get, an EphID will be generated and the hash id
@@ -118,3 +118,14 @@ And we use pop to kick out the oldest DBF, while pop won't release
 the room the DBF takes, we use del to release the room occupied by the DBF
 As a DBF is a really long array, we believe this is important.
 
+Please note that in order to make our program'sout put, 
+we force the program to create a QBF after sending 6 messages.
+Please make sure each client recieves at least three share messages.
+Or no EphID will be decrypted and nothing will be added into the DBF,
+since all the DBFs are empty ,the program will refuse to combine the DBFs to QBF.
+You have to wait for 60 minute until the program automatically gengerate a QBF.
+Don't worry, if you turn on client1 first and start client2 within 20 seconds,
+each client is able to decrypt a EphID.
+If you turn on client1 and then turn on client2 more than 20 seconds later, only client2
+is able to print the message for creating and uploading QBF, client1 will say there is not enough
+DBFs, and skip the combine and upload proccess.
