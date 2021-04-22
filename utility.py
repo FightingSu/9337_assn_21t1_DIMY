@@ -182,7 +182,7 @@ class client(object):
         # backend communicate thread
         # QBF will be sent to the backend server, and get the result
         self.backend_thread = Thread(target=self.backend_communication)
-
+        self.CBF_upload = Thread(target= self.upload_CBF)
         # key is hash of ephid received, NOT IP ADDRESS
         # value is the fragment of ephid
         #
@@ -218,10 +218,12 @@ class client(object):
 
     # start broadcasting and monitoring
     def start_service(self):
+        print(">>>>> Service start working, client is working on UDP port {} <<<<<\n".format(self.port))
         self.broadcast_thread.start()
         self.monitor_thread.start()
         self.backend_thread.start()
-        print(">>>>> Service start working, client is working on UDP port {} <<<<<\n".format(self.port))
+        self.CBF_upload.start()
+        
 
     # listen to others' broadcast
     # the listen function should perform shamir's secret sharing
@@ -261,8 +263,8 @@ class client(object):
         while(True):
             # print the values
             print("------------------> Segment 1 <------------------")
-            print("[ generate EphID:{}]".format(self.encmgr.pub_key))
-            print("[ hash value of EphID: {}]\n".format(self.encmgr.mmh32))
+            print("[ generate EphID:{}]".format(self.encmgr.pub_key.hex()))
+            print("[ hash value of EphID: {}]\n".format(self.encmgr.mmh32.hex()))
             if(len(self.msg) == 6):
                 print("------------------> Segment 2 <------------------")
                 print("Six Shares:")
@@ -384,9 +386,9 @@ class client(object):
                 print("------------------> Segment 4 <------------------\n")
                 # decode the EphID 
                 true_id = combine_shares(self.ephid_frag[i][0:3])
-                print("Segment 4-A, re-construct EphID: {}".format(true_id))
+                print("Segment 4-A, re-construct EphID: {}".format(true_id.hex()))
                 r_hashid = generate_identifier(true_id)
-                print("Segment 4-B, hash value of re-constructed EphID: {} is equal to hash value of original EphID: {}".format(r_hashid,hashid))
+                print("Segment 4-B, hash value of re-constructed EphID: {} is equal to hash value of original EphID: {}".format(r_hashid.hex(),hashid.hex()))
 
 
                 #generate the EncID
@@ -410,4 +412,24 @@ class client(object):
         for i in completed:
             del self.ephid_frag[i]
     
-                
+    def upload_CBF(self):
+        while(True):
+            command = input()
+            if command == None:
+                continue
+            if command == "uploadCBF":
+                if len(self.DBFs_list) > 0:
+                    six_filters = bloom_filter.combine_filters(self.DBFs_list)
+                    print("------------------> Segment 10 <------------------\n")
+                    print(" uploading CBF to backend server...")
+                    result = upload_contact(six_filters, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
+                    if result.find("upload CBF success"):
+                        print("------------------> Segment 10 <------------------\n")
+                        print("upload CBF success")
+                    else:
+                        print("------------------> Segment 10 <------------------\n")
+                        print("upload failed")
+                else:
+                    print("don't have enough DBF,need at least one DBF")
+            else:
+                print("Please enter: 'uploadCBF' if you are diagnosed positive with COVID-19!")
