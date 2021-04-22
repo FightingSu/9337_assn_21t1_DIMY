@@ -10,6 +10,7 @@ bf.put("great")
 
 result = query_contact(bf, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/qbf/query')
 pprint(result)
-
+if result.find("No Match"):
+    print("result: None Match!")
 result = upload_contact(bf, 'http://ec2-3-26-37-172.ap-southeast-2.compute.amazonaws.com:9000/comp4337/cbf/upload')
 pprint(result)
