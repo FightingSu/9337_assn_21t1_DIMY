@@ -334,6 +334,7 @@ class client(object):
             # print("It's 10 minutes, generate a new daily bloom filter!")
             self.DBFs_list.append(self.DBFs)
             self.DBFs = bloom_filter(800000,3,1000)
+            print("======= create a new Contact BloomFilter (every 10 minutes will create a new one, maximum 6 CBFs) ======= \n")
             # every 10 minutes, clear the contact list
             for i in self.ephid_frag:
                 if len(i) <=2:
