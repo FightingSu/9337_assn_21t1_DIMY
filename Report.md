@@ -18,7 +18,9 @@ We used `git` to help us collaborate. So, in order to reduce conflicts, we made 
 
 In order to understand each other's code, we made a directory to store demonstration code to read. Also a readme file was created for us to understand how the classes and functions work. This is also a efficient way improving efficiency.
 
-**In addition, if you tries to run our code, please check `readme.md` if you meet problems.**
+**In addition, if you tries to run our code, please check `readme.md` if you meet problems.**  
+
+*And you can checkout to branch `heyue` to do run the code. This branch now was configured as a "faster" version of main branch*
 
 ## Implement detail
 
