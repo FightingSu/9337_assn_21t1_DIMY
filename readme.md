@@ -118,3 +118,7 @@ And we use pop to kick out the oldest DBF, while pop won't release
 the room the DBF takes, we use del to release the room occupied by the DBF
 As a DBF is a really long array, we believe this is important.
 
+### part3
+we are know using pip3 install pycryptodomex
+pycryptodomex contains a shamir class.
+to install it on Pi, as we are using python3, please enter pip3 install pycryptodomex

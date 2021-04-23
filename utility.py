@@ -23,8 +23,8 @@ from threading import Thread
 
 # sss
 # from third_party.sss import create_shares, combine_shares
-# from Crypto.Protocol.SecretSharing import Shamir as shamir
-from third_party.SecretSharing import Shamir as shamir
+from Crypto.Protocol.SecretSharing import Shamir as shamir
+
 # default list
 from collections import defaultdict
 
@@ -247,8 +247,8 @@ class client(object):
             data, address = s.recvfrom(1024)
             recived_hashid = data[-3:]
         
-            # if recived_hashid in self.my_hash_id:
-            #     continue
+            if recived_hashid in self.my_hash_id:
+                continue
 
             # print('Server received from {}: {}'.format(address, data.decode('utf-8')))
             print('[Segment 3-B, received share: {}]'.format(data[2:-4].hex()))
