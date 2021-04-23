@@ -8,16 +8,18 @@ In this project, following third party libraries are used:
 + Murmur hash library: [pymmh3](https://github.com/wc-duck/pymmh3)
 + ECDH library: [ecdsa](https://github.com/tlsfuzzer/python-ecdsa)
 + bitarray: [bitarray](https://pypi.org/project/bitarray/)
-+ Shamir's secret sharing: [shamir-mnemonic](https://github.com/trezor/python-shamir-mnemonic)
++ Shamir's secret sharing: [pycryptodome](https://github.com/Legrandin/pycryptodome)
 + Requests: [Requests](https://docs.python-requests.org/en/master/)
 
 ```bash
-pip3 install bitarray shamir-mnemonic requests
+pip3 install bitarray pycryptodome requests
 ```
 
 Please note that you may **failed to install bitarray using `pip`**, because it will compile some C/C++ code in your computer. It requires environment building C/C++ project which you may not have. If that happens, you may go to [this website](https://www.lfd.uci.edu/~gohlke/pythonlibs/#bitarray) (seems for windows only) to download pre-compiled binaries to install.
 
-*Note: For shamir's secret sharing, if is (3,6) mode: creates 6 shares and 3 shares are enough to encrypt the message so only 3 shares should be provided while decrypting or it will raise an error.*
+Please run **pip3 install pycryptodome** to install pycryptodome
+If you get errors like  **ModuleNotFoundError: No module named 'Crypto.Protocol.SecretSharing'**, please make sure you install the packet by **pip3**, please use **pip uninstall pycryptodome** to uninstall the old package and install it by **pip3**
+
 
 ## Experiments
 
@@ -80,8 +82,8 @@ The `client` mainly focus on broadcasting and listening. It also decides when a 
 ephid_frag is a dictionary, which stored all the received hash id and shared messages.
 like this:
 {
-    Hash_id_1:shared_msg_1, shared_message_2;
-    Hash_id_2:shared_msg-1
+Hash_id_1:shared_msg_1, shared_message_2;
+Hash_id_2:shared_msg-1
  }
  Note that every hash id won't have more then two shared messages
  As onece three messages are get, an EphID will be generated and the hash id
@@ -118,7 +120,7 @@ And we use pop to kick out the oldest DBF, while pop won't release
 the room the DBF takes, we use del to release the room occupied by the DBF
 As a DBF is a really long array, we believe this is important.
 
-Please note that in order to make our program'sout put, 
+Please note that in order to make our program's out put, 
 we force the program to create a QBF after sending 6 messages.
 Please make sure each client recieves at least three share messages.
 Or no EphID will be decrypted and nothing will be added into the DBF,
